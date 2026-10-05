@@ -1,0 +1,41 @@
+{
+  "manifest_version": 2,
+  "name": "HN Mark All Read",
+  "version": "2.0.0",
+  "description": "Mark Hacker News stories and comments as read, hide what you've already seen, and follow threads for new comments. Port of HNMarkAllRead for Firefox for Android.",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "hn-mark-all-read@tibl778.github.io",
+      "strict_min_version": "140.0",
+      "data_collection_permissions": {
+        "required": [
+          "none"
+        ]
+      }
+    },
+    "gecko_android": {
+      "strict_min_version": "142.0"
+    }
+  },
+  "permissions": [
+    "storage"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://news.ycombinator.com/*"
+      ],
+      "css": [
+        "styles.css"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_end"
+    }
+  ],
+  "icons": {
+    "48": "icons/icon.svg",
+    "96": "icons/icon.svg"
+  }
+}
