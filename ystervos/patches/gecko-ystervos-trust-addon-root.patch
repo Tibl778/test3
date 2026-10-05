@@ -1,0 +1,63 @@
+From: Ystervos
+Subject: [PATCH] Gecko - Trust the Ystervos add-on signing root
+
+Adds the Ystervos root CA to the add-on signature trust anchors, next to
+Mozilla's AMO production root. Add-ons signed by either install normally;
+xpinstall.signatures.required stays on.
+---
+diff --git a/security/manager/ssl/moz.build b/security/manager/ssl/moz.build
+index 4443d70..197377e 100644
+--- a/security/manager/ssl/moz.build
++++ b/security/manager/ssl/moz.build
+@@ -282,7 +282,12 @@ headers_arrays_certs = [
+             "tests/unit/test_signed_apps/xpcshellTestRoot2.pem",
+         ],
+     ),
+-    ("addons-public.inc", "addonsPublicRoots", ["addons-public.pem"]),
++    (
++        "addons-public.inc",
++        "addonsPublicRoots",
++        # Ystervos: also trust add-ons signed with the Ystervos add-on root CA.
++        ["addons-public.pem", "ystervos-addons-root.pem"],
++    ),
+     (
+         "addons-public-intermediate.inc",
+         "addonsPublicIntermediates",
+diff --git a/security/manager/ssl/ystervos-addons-root.pem b/security/manager/ssl/ystervos-addons-root.pem
+new file mode 100644
+index 0000000..686df08
+--- /dev/null
++++ b/security/manager/ssl/ystervos-addons-root.pem
+@@ -0,0 +1,32 @@
++-----BEGIN CERTIFICATE-----
++MIIFgDCCA2igAwIBAgIUVLREeNLBtM4a2+wmOQp6bR1fMp4wDQYJKoZIhvcNAQEM
++BQAwVzERMA8GA1UECgwIWXN0ZXJ2b3MxIDAeBgNVBAsMF1lzdGVydm9zIEFkZC1v
++biBTaWduaW5nMSAwHgYDVQQDDBdZc3RlcnZvcyBBZGQtb24gUm9vdCBDQTAgFw0y
++NjEwMDUyMTUwMzlaGA8yMDUxMTAwNTIxNTAzOVowVzERMA8GA1UECgwIWXN0ZXJ2
++b3MxIDAeBgNVBAsMF1lzdGVydm9zIEFkZC1vbiBTaWduaW5nMSAwHgYDVQQDDBdZ
++c3RlcnZvcyBBZGQtb24gUm9vdCBDQTCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCC
++AgoCggIBAKkwYJ6uaJC5F/J1aMeBC0o92LB8nWTdsvZFwmjStogq9TWEdHJT2z6j
++VR1QpXuNGM3B8q2aWPDSzUZqk98316qExUTizyNLcHEuXYmfLC3i2mqjQbcJ5S2b
++67oDo5qMmXIM/Pn38lnVRuLhrM9YeGkC9s02WaSDFSoqBKIYA1V9mMNy0UtME4cM
++L+uhr+eim/ePXLGjn1zyeHsaXMomdHHdA1lbIyJ+RmAJZ1mcaFBBS5DtLim16QQJ
++v9n7aq2XguyZg3GApSbxNzVQGJUjhjUJirVPiXJ5CYN9NFApzpsLG07uy3DsXSIb
++8zLJhGuiEutn8bOa9OL/SgH7dWShVywSqGPS2c5GmCp5cACm3Ng0EjkO8JgT2l4W
++Xwfqju5eDhcBLSdgdkjkhXVkPZ49NH6LliclKTa8ZwZr6GIQMoMuMjmNKtv9Ny1J
++HvBnZI7kd47GCCiMcDthUcUs/ftVVzm0oBSbF1gfByyDGwdaaa/p0vXW2W1tl8lz
++wmY7mHCasbhj2pxqcoM83zuVNw1WhRTgsx+MIQr7cq5PlmodYsu+XwXGXrVNWhnS
++42LZ23ZktNZP5OLctHhUlKlrB129lKuXKqhRGwLNjxq8NX6Igjy3weoLagz2GVT3
++sCgrP7F818Ij5xNQNxvwuKGzlUbCqLh6oSFLPUNSFLdf9pi+8CenAgMBAAGjQjBA
++MA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBQxyFSW
++gFoDHs+yMyc110h2ijSvEjANBgkqhkiG9w0BAQwFAAOCAgEAMQP+cF2yi0g79DQX
++zuhTzQjtbIq7ZX/9dPxa34nsoLkTn2QIUbeS3dzPqQL4YxRv1HeLuedNjl1qj5U+
++R6umOiUE2D3pLehfde6cWuVgQhJp9o155Rsfi2b+YRHajEtLMQmaMzuKwWvczMAm
++nN+hr4j7Ix6MEIB5+E8Ou0PAsrLEP2fZlxABDYsH+9jD2qXWnAlp2vHrlwyR4QxO
++9SeDfJt3iccPjvjeUsY0eVYUNL3emp28MG7qi1muCKVplFiDD73TW34w2E2br4Lr
++uJvtLCR1ZcKl9wkXSK74to77piMZxFzXOk3Ei+MFb+w/oFgKNWEyeeCpoVSJwzRy
++vOsylkrTYzfmA53YknqVqR6x/i2SgNPwesnlLzT/c4HvnxuH0AUdc05ML+GxRLSK
++Tn2/XJ1TIyqungcC7KSEwUvXZ/FP8dww+r44GLbI1Yx1GsKV8eXXetnYjlepZF6c
++vscE9ggSEEz4X0BlTdDGqjL/z8VnWI6t6LhNiNYVJg0nnlVtfpQJ3sbMLtJtmCZw
++iFRcWCKfA3sG+ASfuRIbyvmUffBR6AxGTqVsQXOzEUSCAQkQrC5NlzmFaruVMlsk
++Ayj4RfFGDDGZ0xvOubfbCu33CqrZw3IOC4NpuMM5gKkCm9tlfCrKppDRHTJ1b2Re
++duvWyCFz/TJglta33FWCC+mzgxM=
++-----END CERTIFICATE-----

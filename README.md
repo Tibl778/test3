@@ -44,6 +44,12 @@ If IronFox still rejects the file as "corrupt" or "unverified", the other route 
 add-on on addons.mozilla.org (`web-ext sign --channel=unlisted`, which needs an AMO API key). A signed XPI
 installs with step 4 alone.
 
+## Install in Ystervos
+
+`dist/hn-mark-all-read-ystervos-signed.xpi` is signed with the Ystervos add-on key (see [ystervos/](ystervos/README.md)).
+Ystervos accepts it with signature checks left on: open **Settings → About Ystervos**, tap the logo 5 times, then use
+**Settings → Install extension from file**.
+
 ## Build
 
 ```sh
