@@ -6,6 +6,7 @@
 # Usage: make-keys.sh <output-dir>
 # Keep <output-dir> private. Only root-ca.pem is public; it goes into ystervos/certs/.
 set -eu
+tools="$(cd "$(dirname "$0")" && pwd)"
 out="${1:?usage: make-keys.sh <output-dir>}"
 mkdir -p "$out"
 cd "$out"
@@ -33,6 +34,11 @@ openssl req -new -x509 -newkey rsa:4096 -nodes -sha384 -days 9131 \
   -subj "/O=Ystervos/OU=Ystervos Add-on Signing/CN=Ystervos Add-on Root CA" \
   -config openssl.cnf -extensions root_ext \
   -keyout root-ca.key -out root-ca.pem
+
+# patch-apk.sh writes the root over Mozilla's add-on stage root in libxul.so, so it must be
+# exactly that length (1608 bytes). Re-issue it at that size (same key and name).
+python3 "$tools/fit-root.py" . 1608
+rm -f root-ca.prev.pem
 
 # Signing CA: RSA 4096, 15 years, signs the per-add-on certificates.
 openssl req -new -newkey rsa:4096 -nodes -sha384 \

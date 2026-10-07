@@ -8,7 +8,10 @@ Ystervos is IronFox with three changes:
    Mozilla's AMO root. Signature enforcement stays on: unsigned add-ons are still rejected,
    and you don't need `xpinstall.signatures.required=false`.
 
-The changes target IronFox **v157.0.0.1** (Firefox 157.0).
+There are two ways to make it:
+
+- **`patch-apk.sh` (quick, about 2 minutes):** patches IronFox's official release APK. Nothing is compiled.
+- **`build.sh` (full source build, hours):** builds IronFox from source with the changes applied as patches.
 
 ## Layout
 
@@ -18,6 +21,9 @@ The changes target IronFox **v157.0.0.1** (Firefox 157.0).
 | `patches/gecko-ystervos-trust-addon-root.patch` | Gecko patch: adds that root to `addonsPublicRoots` in `security/manager/ssl/moz.build` |
 | `apply.sh` | Applies the rename, package ID and Gecko patch to an IronFox checkout |
 | `rebrand-sources.sh` | Run at the end of IronFox's prebuild; renames "IronFox" in user-visible strings only |
+| `patch-apk.sh` | Downloads IronFox's latest release APK, checks its SHA-512, patches it and signs it with your keystore |
+| `tools/patch_apk.py` | The patch steps `patch-apk.sh` applies (see below) |
+| `tools/fit-root.py` | Re-issues the root (same key) at the byte length `patch-apk.sh` needs |
 | `build.sh` | Clones IronFox, applies the changes and builds a signed arm64 APK in IronFox's Docker image |
 | `tools/make-keys.sh` | Creates the add-on signing PKI and the APK keystore |
 | `tools/sign-xpi.py` | Signs an `.xpi` with your key, in the same PKCS#7 layout addons.mozilla.org uses |
@@ -27,7 +33,7 @@ The changes target IronFox **v157.0.0.1** (Firefox 157.0).
 
 `tools/make-keys.sh <dir>` creates:
 
-- `root-ca.key` / `root-ca.pem`: the root. Only the `.pem` is public; it's the file in `certs/`.
+- `root-ca.key` / `root-ca.pem`: the root (re-issued at exactly 1608 bytes so `patch-apk.sh` can use it). Only the `.pem` is public; it's the file in `certs/`.
   You need the `.key` only to issue a new signing CA, so keep it offline.
 - `signing-ca.key` / `signing-ca.pem`: an intermediate CA that `sign-xpi.py` uses. It issues a fresh
   certificate per add-on, with CN = add-on ID, which is what Firefox checks.
@@ -51,7 +57,31 @@ The signature uses SHA-256, which IronFox's hardened settings require
 Install it in Ystervos the same way as any `.xpi`: **Settings → About Ystervos**, tap the logo 5 times,
 then **Settings → Install extension from file**.
 
-## Building
+## Making the APK from the official release
+
+```sh
+ystervos/patch-apk.sh <keys-dir>             # latest IronFox release
+ystervos/patch-apk.sh <keys-dir> 157.0.1     # a specific release (must still be in IronFox's F-Droid repo)
+```
+
+Needs curl, python3, openssl and Java 17+. The result is `ystervos-build/ystervos-<version>-arm64-v8a.apk`.
+What it changes in the release:
+
+- **`libxul.so`:** Mozilla's add-on *stage* root certificate (a test root that release builds don't use)
+  is overwritten with the Ystervos root. Both are 1608 bytes, so nothing else in the library moves.
+  Mozilla's production AMO root is untouched.
+- **`omni.ja`** (`XPIInstall.sys.mjs`): add-ons are checked against the AMO root first. Only when the
+  signature doesn't chain to AMO is the stage slot (now your root) tried. Unsigned and tampered add-ons are
+  still rejected. The brand names in `.ftl`/`.properties` files say Ystervos.
+- **App:** package ID `org.ystervos.browser` (manifest, launcher shortcuts and the one package-ID constant in
+  the code), and "Ystervos" in the user-visible strings of every language.
+- **Signature:** zipaligned and signed (v2 + v3) with `ystervos-apk.jks`.
+
+To update, run it again when IronFox releases, then install the new APK over the old one.
+Your data stays, because it's the same package and the same signing key.
+If a release changes something the patcher expects, it stops with an error instead of producing a half-patched APK.
+
+## Building from source
 
 On a Linux machine with Docker, about 80 GB of free disk and 16 GB of RAM:
 
