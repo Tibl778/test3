@@ -154,7 +154,14 @@
           markStoryRow(tr.id);
         }
       }
-      mergeInto(KEYS.stories, entries);
+      return mergeInto(KEYS.stories, entries);
+    };
+
+    // "+ more": mark this page read, then open the next page (HN's "More" link).
+    const moreLink = document.querySelector("a.morelink");
+    const markAllAndMore = async () => {
+      await markAll();
+      location.href = moreLink.href;
     };
 
     const onHide = (checked) => {
@@ -163,16 +170,24 @@
       setFlag(KEYS.hideStories, checked);
     };
 
+    const markButton = () => {
+      const mark = button("✓ Mark all read", "Mark every story on this page as read", markAll);
+      if (!moreLink) return mark;
+      return el("span", { class: "hnmar_split" }, [
+        mark,
+        button("+ more", "Mark every story on this page as read and open the next page", markAllAndMore),
+      ]);
+    };
+
     const bar = () => el("span", { class: "hnmar_bar" }, [
-      button("✓ Mark all read", "Mark every story on this page as read", markAll),
+      markButton(),
       el("span", { class: "hnmar_hide_stories" }, [toggle("Hide read", !!stored[KEYS.hideStories], onHide)]),
     ]);
 
     const pagetop = document.querySelector(".pagetop");
     if (pagetop) pagetop.append(" ", bar());
 
-    const more = document.querySelector("a.morelink");
-    if (more) more.parentElement.append(" ", bar());
+    if (moreLink) moreLink.parentElement.append(" ", bar());
   }
 
   function markStoryRow(id) {

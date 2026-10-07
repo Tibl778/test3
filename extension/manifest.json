@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "HN Mark All Read",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Mark Hacker News stories and comments as read, hide what you've already seen, and follow threads for new comments. Port of HNMarkAllRead for Firefox for Android.",
   "browser_specific_settings": {
     "gecko": {

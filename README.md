@@ -7,6 +7,7 @@ Chrome extension) to Firefox for Android and its forks, such as IronFox. It also
 
 On listing pages (front page, new, past, ask, show…):
 - **✓ Mark all read** greys out every story on the page. It shows in the header and next to "More".
+- **+ more**, attached to that button, marks the page read and opens the next page.
 - **Hide read** hides stories you've marked read.
 - Stories you follow are shown in purple, with a green **N new / M comments** link when there are new comments.
 

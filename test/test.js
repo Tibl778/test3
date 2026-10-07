@@ -16,7 +16,7 @@ const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++
   const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   await ctx.route('https://news.ycombinator.com/**', r => {
     const u = new URL(r.request().url());
-    if (u.pathname === '/news' || u.pathname === '/') return r.fulfill({ contentType: 'text/html', body: fx.front });
+    if (u.pathname === '/news' || u.pathname === '/news/' || u.pathname === '/') return r.fulfill({ contentType: 'text/html', body: fx.front });
     if (u.pathname === '/item') return r.fulfill({ contentType: 'text/html', body: fx.item });
     return r.fulfill({ status: 404, body: '' });
   });
@@ -65,6 +65,14 @@ const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++
   ok(await page.$eval('[id="101"] + tr .hnmar_new_comments', e => e.textContent) === '2 new / 12 comments', 'followed new comments on front');
   ok(await vis('[id="101"]') && !(await vis('[id="102"]')), 'followed story stays visible when hiding read');
   await page.screenshot({ path: '/tmp/front-after.png', fullPage: true });
+  // "+ more" split button: marks the page read, then opens the next page.
+  await page.evaluate(() => { __store = {}; sessionStorage.setItem('__store', '{}'); });
+  await load('https://news.ycombinator.com/news');
+  ok(await page.$$eval('.hnmar_split', a => a.length) === 2, 'split button in header and near More');
+  await page.screenshot({ path: '/tmp/front-split.png' });
+  await Promise.all([page.waitForURL('**/news?p=2'), page.click('.pagetop .hnmar_split .hnmar_btn:last-child')]);
+  ok(Object.keys((await page.evaluate(() => JSON.parse(sessionStorage.getItem('__store') || '{}'))).read_stories || {}).length === 4, '+ more stored all four stories before leaving');
+  ok(page.url().endsWith('/news?p=2'), '+ more opened the next page');
   ok(errs.length === 0, 'no page errors ' + errs.join(';'));
   await b.close();
   process.exit(fails ? 1 : 0);
