@@ -4,3 +4,6 @@ ystervos-build/
 *.key
 *.jks
 *.password
+# Build output and test dependencies
+out/
+test/node_modules/

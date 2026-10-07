@@ -1,7 +1,41 @@
-# HN Mark All Read for Firefox for Android
+# HN Mark All Read + Ystervos
 
-A port of [HNMarkAllRead](https://github.com/andreicristianpetcu/HNMarkAllRead) (Daniele Mazzini's
-Chrome extension) to Firefox for Android and its forks, such as IronFox. It also runs on desktop Firefox.
+- **HN Mark All Read:** a Firefox for Android add-on that marks Hacker News stories and comments as read.
+  It's a rewrite of [HNMarkAllRead](https://github.com/andreicristianpetcu/HNMarkAllRead).
+- **Ystervos:** IronFox renamed, installable next to IronFox, and set up to trust add-ons signed with your own key.
+  Signature checks stay on.
+
+Everything runs on your own Linux machine through one script (macOS works with GNU coreutils installed). GitHub is optional.
+For the full technical story, aimed at an LLM rebuilding this project, read [AGENTS.md](AGENTS.md).
+
+## Quick start
+
+```sh
+./ystervos.sh doctor      # checks for bash, curl, python3, openssl, Java 17+, node/npm
+./ystervos.sh keys        # once: creates your keys in ~/.ystervos/keys (back them up)
+./ystervos.sh all         # tests, signed add-on, Ystervos APK, split parts
+./ystervos.sh install     # with the phone on USB (adb): installs the APK, copies the add-on
+./ystervos.sh schedule    # rebuild automatically when IronFox releases
+```
+
+Already have a keys bundle? Extract it and run commands with `YSTERVOS_KEYS=/path/to/ystervos-keys`.
+Run `./ystervos.sh help` for every command.
+
+| Output | Where |
+|---|---|
+| Signed add-on | `dist/hn-mark-all-read-ystervos-signed.xpi` |
+| Ystervos APK (arm64) | `out/ystervos-<version>-arm64-v8a.apk` |
+| APK split into parts under 30 MB | `out/parts/` |
+
+## Installing on the phone
+
+1. Install the Ystervos APK.
+2. **Settings → Ystervos settings → Security → Allow installation of add-ons** (the app restarts).
+3. **Settings → About Ystervos**, then tap the logo 5 times ("Debug menu enabled"). This resets on every restart.
+4. **Settings → Advanced → Install extension from file**, and pick the signed `.xpi`.
+
+The latest signed add-on is also in this repo:
+[dist/hn-mark-all-read-ystervos-signed.xpi](dist/hn-mark-all-read-ystervos-signed.xpi).
 
 ## Features
 
@@ -20,43 +54,20 @@ On a story's comments page:
 
 Everything is forgotten after 4 days, like in the original.
 
-## Changes from the original
+## Changes from the original add-on
 
-- Rewritten in plain JavaScript (no jQuery 1.7) against HN's current markup (`span.titleline`, `td.ind[indent]`,
-  `table.comment-tree`, …). The original's hard-coded DOM indexes stopped matching years ago.
-- State is kept in `browser.storage.local` instead of HN's `localStorage`, so it survives IronFox
-  clearing site data. Writes merge with what is stored, so two open tabs don't overwrite each other.
-- Touch-sized buttons. Hover-only features ("show parent" on hover, the left-margin collapse handles) were
-  replaced with tap actions.
-- New icon, as the original README asks for forks.
+- Rewritten in plain JavaScript for HN's current markup; the original's hard-coded page positions stopped working years ago.
+- Saves to the add-on's own storage, so IronFox clearing site data doesn't erase what you've read.
+- Buttons sized for touch; hover-only features became tap actions.
+- New icon, as the original README asks of forks.
 
-## Install in IronFox (Android)
+## GitHub (optional)
 
-The XPI is unsigned, so IronFox needs to be told to accept unsigned add-ons first:
-
-1. Get `dist/hn-mark-all-read.xpi` onto the phone (download it from this repo or rebuild it with `./build.sh`).
-2. In IronFox, open `about:config`, search for `xpinstall.signatures.required`, and set it to **false**.
-3. Open **Settings → About IronFox** and tap the IronFox logo 5 times to turn on the debug menu.
-4. Go back to **Settings** and open **Install extension from file** (it's near the bottom, under Advanced).
-   Pick `hn-mark-all-read.xpi` and confirm.
-5. Open https://news.ycombinator.com.
-
-If IronFox still rejects the file as "corrupt" or "unverified", the other route is to sign it as an unlisted
-add-on on addons.mozilla.org (`web-ext sign --channel=unlisted`, which needs an AMO API key). A signed XPI
-installs with step 4 alone.
-
-## Install in Ystervos
-
-`dist/hn-mark-all-read-ystervos-signed.xpi` is signed with the Ystervos add-on key (see [ystervos/](ystervos/README.md)).
-Ystervos accepts it with signature checks left on: open **Settings → About Ystervos**, tap the logo 5 times, then use
-**Settings → Install extension from file**.
-
-## Build
-
-```sh
-./build.sh   # writes dist/hn-mark-all-read.xpi
-```
+- `.github/workflows/test.yml` runs `./ystervos.sh test` on every push.
+- `.github/workflows/ystervos.yml` builds the APK on GitHub. It needs two repository secrets you add yourself:
+  `YSTERVOS_APK_KEYSTORE` (base64 of `ystervos-apk.jks`) and `YSTERVOS_APK_KEYSTORE_PASSWORD`.
 
 ## License
 
-MIT. Original code © 2012 Daniele Mazzini. See [LICENSE](LICENSE).
+MIT. The original add-on code is © 2012 Daniele Mazzini; see [LICENSE](LICENSE).
+Ystervos is built from [IronFox](https://gitlab.com/ironfox-oss/IronFox), which has its own licenses.

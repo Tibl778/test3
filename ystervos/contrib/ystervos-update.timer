@@ -1,0 +1,11 @@
+# Runs ystervos-update.service daily (and at the next boot if a run was missed).
+[Unit]
+Description=Daily check for a new IronFox release to build Ystervos from
+
+[Timer]
+OnCalendar=daily
+RandomizedDelaySec=1h
+Persistent=true
+
+[Install]
+WantedBy=timers.target

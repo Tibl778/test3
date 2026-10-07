@@ -1,0 +1,12 @@
+# Builds a new Ystervos APK when IronFox publishes a release. Installed by:
+#   ./ystervos.sh schedule
+# Edit REPO and YSTERVOS_KEYS if you install it by hand.
+[Unit]
+Description=Build Ystervos from the latest IronFox release
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+Environment=YSTERVOS_KEYS=%h/.ystervos/keys
+ExecStart=REPO/ystervos.sh update

@@ -1,5 +1,8 @@
 # Ystervos
 
+> Use `./ystervos.sh` in the repository root for every step below (`keys`, `addon`, `apk`, `split`,
+> `install`, `update`). This file explains what the pieces do; [AGENTS.md](../AGENTS.md) has the full detail.
+
 Ystervos is IronFox with three changes:
 
 1. **Name:** the app is called "Ystervos" (launcher, about pages, settings text).

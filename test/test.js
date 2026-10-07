@@ -1,5 +1,5 @@
 // Runs content.js against mock HN pages in headless Chromium with a stubbed browser.storage.
-// Usage: npm i playwright-core && node test/test.js
+// Usage: ./ystervos.sh test   (installs playwright-core into test/node_modules, then runs this)
 const { chromium } = require('playwright-core');
 const fs = require('fs');
 const fx = require('./fixtures');
@@ -12,7 +12,13 @@ window.browser = { storage: { local: {
 let fails = 0;
 const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
 (async () => {
-  const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' }).catch(() => chromium.launch());
+  // Any installed Chromium/Chrome works; set CHROMIUM_PATH to choose one explicitly.
+  const candidates = [process.env.CHROMIUM_PATH, '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
+    '/usr/bin/chromium', '/usr/bin/chromium-browser', '/usr/bin/google-chrome', '/usr/bin/google-chrome-stable',
+    '/snap/bin/chromium', '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'].filter(Boolean);
+  const exe = candidates.find(p => fs.existsSync(p));
+  if (!exe) throw new Error('No Chromium/Chrome found. Install one or set CHROMIUM_PATH.');
+  const b = await chromium.launch({ executablePath: exe });
   const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   await ctx.route('https://news.ycombinator.com/**', r => {
     const u = new URL(r.request().url());

@@ -1,7 +1,7 @@
 name: Ystervos
 
-# Builds the Ystervos APK from IronFox's latest release with ystervos/patch-apk.sh and uploads it
-# as a workflow artifact. Needs two repository secrets (Settings -> Secrets and variables -> Actions):
+# Optional: the same build as `./ystervos.sh apk` (ystervos/patch-apk.sh), run on GitHub, with the
+# APK uploaded as a workflow artifact. Everything here also runs locally without GitHub. Needs two repository secrets (Settings -> Secrets and variables -> Actions):
 #   YSTERVOS_APK_KEYSTORE           base64 of ystervos-apk.jks
 #   YSTERVOS_APK_KEYSTORE_PASSWORD  contents of ystervos-apk.password
 # Only the APK keystore is stored on GitHub; the add-on signing keys stay with you.
@@ -81,15 +81,19 @@ jobs:
         env:
           KS: ${{ secrets.YSTERVOS_APK_KEYSTORE }}
           PW: ${{ secrets.YSTERVOS_APK_KEYSTORE_PASSWORD }}
+          YSTERVOS_KEYS: ${{ runner.temp }}/keys
+          YSTERVOS_OUT: ${{ github.workspace }}/out
+          YSTERVOS_WORK: ${{ runner.temp }}/build
         run: |
-          keys="$RUNNER_TEMP/keys"
-          mkdir -p "$keys" && chmod 700 "$keys"
-          printf '%s' "$KS" | base64 -d > "$keys/ystervos-apk.jks"
-          printf '%s\n' "$PW" > "$keys/ystervos-apk.password"
-          cp ystervos/certs/ystervos-addons-root.pem "$keys/root-ca.pem"
-          ystervos/patch-apk.sh "$keys" "${{ steps.version.outputs.version }}" "$RUNNER_TEMP/build"
-          rm -rf "$keys"
-          cp "$RUNNER_TEMP/build/ystervos-${{ steps.version.outputs.version }}-arm64-v8a.apk" .
+          # Same command as a local build. Only the APK keystore is needed here: the add-on
+          # signing keys stay off GitHub, and the root certificate comes from the repo.
+          mkdir -p "$YSTERVOS_KEYS" && chmod 700 "$YSTERVOS_KEYS"
+          printf '%s' "$KS" | base64 -d > "$YSTERVOS_KEYS/ystervos-apk.jks"
+          printf '%s\n' "$PW" > "$YSTERVOS_KEYS/ystervos-apk.password"
+          cp ystervos/certs/ystervos-addons-root.pem "$YSTERVOS_KEYS/root-ca.pem"
+          ystervos/patch-apk.sh "$YSTERVOS_KEYS" "${{ steps.version.outputs.version }}" "$YSTERVOS_WORK"
+          rm -rf "$YSTERVOS_KEYS"
+          cp "$YSTERVOS_WORK/ystervos-${{ steps.version.outputs.version }}-arm64-v8a.apk" .
           sha256sum ystervos-*.apk | tee SHA256SUMS
 
       - uses: actions/upload-artifact@v4
