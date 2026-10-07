@@ -81,6 +81,22 @@ To update, run it again when IronFox releases, then install the new APK over the
 Your data stays, because it's the same package and the same signing key.
 If a release changes something the patcher expects, it stops with an error instead of producing a half-patched APK.
 
+## Building on GitHub Actions
+
+`.github/workflows/ystervos.yml` runs `patch-apk.sh` on GitHub and uploads the APK as a workflow artifact
+(kept 90 days). Once the workflow is on the default branch, it also checks daily and builds only when IronFox
+has a new release. You can start a build by hand from the Actions tab (**Run workflow**).
+
+It needs two repository secrets (**Settings → Secrets and variables → Actions**):
+
+| Secret | Value |
+|---|---|
+| `YSTERVOS_APK_KEYSTORE` | `base64 -w0 ystervos-apk.jks` |
+| `YSTERVOS_APK_KEYSTORE_PASSWORD` | contents of `ystervos-apk.password` |
+
+Only the APK keystore goes to GitHub. The add-on signing keys (`root-ca.key`, `signing-ca.key`) stay with you;
+the build uses the public root certificate in `certs/`.
+
 ## Building from source
 
 On a Linux machine with Docker, about 80 GB of free disk and 16 GB of RAM:

@@ -1,0 +1,113 @@
+name: Ystervos
+
+# Builds the Ystervos APK from IronFox's latest release with ystervos/patch-apk.sh and uploads it
+# as a workflow artifact. Needs two repository secrets (Settings -> Secrets and variables -> Actions):
+#   YSTERVOS_APK_KEYSTORE           base64 of ystervos-apk.jks
+#   YSTERVOS_APK_KEYSTORE_PASSWORD  contents of ystervos-apk.password
+# Only the APK keystore is stored on GitHub; the add-on signing keys stay with you.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "IronFox version (e.g. 157.0.1), or 'latest'"
+        default: latest
+      force:
+        description: "Build even if this version was already built"
+        type: boolean
+        default: false
+  schedule:
+    - cron: "17 6 * * *" # daily; only builds when IronFox has a new release
+  push:
+    branches: [claude/hnmarkallread-firefox-android-l0bh3z]
+    paths: [".github/workflows/ystervos.yml", "ystervos/**"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ystervos
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check secrets
+        env:
+          KS: ${{ secrets.YSTERVOS_APK_KEYSTORE }}
+          PW: ${{ secrets.YSTERVOS_APK_KEYSTORE_PASSWORD }}
+        run: |
+          if [ -z "$KS" ] || [ -z "$PW" ]; then
+            echo "::error::Add the YSTERVOS_APK_KEYSTORE and YSTERVOS_APK_KEYSTORE_PASSWORD repository secrets, then re-run this workflow."
+            exit 1
+          fi
+
+      - name: Resolve IronFox version
+        id: version
+        run: |
+          v="${{ inputs.version || 'latest' }}"
+          if [ "$v" = latest ]; then
+            v="$(curl -fsSL https://gitlab.com/api/v4/projects/ironfox-oss%2FIronFox/releases/permalink/latest | jq -r .tag_name)"
+            v="${v#v}"
+          fi
+          echo "IronFox $v"
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+
+      # A cache entry marks versions already built, so the daily run only builds new releases.
+      - name: Already built?
+        id: built
+        uses: actions/cache/restore@v4
+        with:
+          path: .ystervos-built
+          key: ystervos-built-${{ steps.version.outputs.version }}-${{ hashFiles('ystervos/**') }}
+          lookup-only: true
+
+      - name: Skip
+        if: steps.built.outputs.cache-hit == 'true' && !inputs.force
+        run: echo "Ystervos ${{ steps.version.outputs.version }} was already built; nothing to do."
+
+      - uses: actions/setup-java@v4
+        if: steps.built.outputs.cache-hit != 'true' || inputs.force
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Build
+        if: steps.built.outputs.cache-hit != 'true' || inputs.force
+        env:
+          KS: ${{ secrets.YSTERVOS_APK_KEYSTORE }}
+          PW: ${{ secrets.YSTERVOS_APK_KEYSTORE_PASSWORD }}
+        run: |
+          keys="$RUNNER_TEMP/keys"
+          mkdir -p "$keys" && chmod 700 "$keys"
+          printf '%s' "$KS" | base64 -d > "$keys/ystervos-apk.jks"
+          printf '%s\n' "$PW" > "$keys/ystervos-apk.password"
+          cp ystervos/certs/ystervos-addons-root.pem "$keys/root-ca.pem"
+          ystervos/patch-apk.sh "$keys" "${{ steps.version.outputs.version }}" "$RUNNER_TEMP/build"
+          rm -rf "$keys"
+          cp "$RUNNER_TEMP/build/ystervos-${{ steps.version.outputs.version }}-arm64-v8a.apk" .
+          sha256sum ystervos-*.apk | tee SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        if: steps.built.outputs.cache-hit != 'true' || inputs.force
+        with:
+          name: ystervos-${{ steps.version.outputs.version }}-arm64-v8a
+          path: |
+            ystervos-*.apk
+            SHA256SUMS
+          compression-level: 0
+          retention-days: 90
+
+      - name: Mark as built
+        if: steps.built.outputs.cache-hit != 'true' || inputs.force
+        run: mkdir -p .ystervos-built && echo "${{ steps.version.outputs.version }}" > .ystervos-built/version
+
+      - uses: actions/cache/save@v4
+        if: steps.built.outputs.cache-hit != 'true'
+        with:
+          path: .ystervos-built
+          key: ystervos-built-${{ steps.version.outputs.version }}-${{ hashFiles('ystervos/**') }}
