@@ -1,0 +1,9 @@
+# Ystervos: private keys and build tree never go in git
+ystervos-keys/
+ystervos-build/
+*.key
+*.jks
+*.password
+# Build output and test dependencies
+out/
+test/node_modules/

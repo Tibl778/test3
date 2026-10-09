@@ -1,0 +1,32 @@
+name: Test
+
+# Same checks as `./ystervos.sh test` locally: add-on tests in headless Chrome, Mozilla's linter,
+# and a syntax check of the shell and Python tools.
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Add-on tests and lint
+        env:
+          CHROMIUM_PATH: /usr/bin/google-chrome
+        run: ./ystervos.sh test
+      - name: Tool syntax
+        run: |
+          for f in ystervos.sh ystervos/*.sh ystervos/tools/*.sh; do bash -n "$f"; done
+          python3 -m py_compile ystervos/tools/*.py
+      - name: Build the unsigned add-on
+        run: YSTERVOS_KEYS=/nonexistent ./ystervos.sh addon

@@ -1,0 +1,7 @@
+{
+  "private": true,
+  "description": "Test dependencies for the HN Mark All Read add-on (run via ./ystervos.sh test)",
+  "devDependencies": {
+    "playwright-core": "1.56.1"
+  }
+}
